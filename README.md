@@ -1,5 +1,10 @@
 # Konyukhov Yaroslav it3-2303. Midterm task for ASP.NET subject - TaskManager.API 
 
+## To launch project:
+- git clone https://github.com/yaroslavKonyukhov/TaskManager.API.git
+- docker-compose up --build in TaskManager.API directory
+- open http://localhost:8080 in browser
+
 ## Answer to block 3
 If we were to implement a NotificationService to send emails triggered by the OnTaskCompleted event, 
 I would choose an Asynchronous Integration Pattern using a Message Broker (e.g., RabbitMQ or Azure Service Bus).
