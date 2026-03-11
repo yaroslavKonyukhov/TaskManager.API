@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  task-manager-api:
+    container_name: task-manager-container
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+    volumes:
+      - .:/src
+    restart: always

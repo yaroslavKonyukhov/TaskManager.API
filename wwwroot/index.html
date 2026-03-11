@@ -1,0 +1,199 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+    <div class="container mx-auto py-10 px-4">
+        <h1 class="text-4xl font-bold text-gray-800 mb-8 text-center md:text-left">Task Manager</h1>
+
+        <div class="flex flex-col md:flex-row gap-8">
+            <div class="md:w-1/3 bg-white p-6 rounded-xl shadow-md h-fit">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">Create New Task</h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Task Type</label>
+                        <select id="taskType" onchange="toggleFormFields()" class="w-full mt-1 p-2 border rounded-md bg-gray-50 outline-none">
+                            <option value="bug">Bug Report</option>
+                            <option value="feature">Feature Request</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Title</label>
+                        <input type="text" id="taskTitle" maxlength="100" placeholder="3-100 characters..." class="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                        <p id="titleError" class="text-red-500 text-[10px] mt-1 hidden italic text-right">Title must be between 3 and 100 characters.</p>
+                    </div>
+
+                    <div id="bugFields">
+                        <label class="block text-sm font-medium text-gray-600">Severity Level</label>
+                        <select id="severity" class="w-full mt-1 p-2 border rounded-md bg-gray-50">
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+
+                    <div id="featureFields" class="hidden">
+                        <label class="block text-sm font-medium text-gray-600">Estimated Hours</label>
+                        <input type="number" id="estHours" step="0.1" placeholder="0.1 - 100" class="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                        <p id="hoursError" class="text-red-500 text-[10px] mt-1 hidden italic text-right">Must be between 0.1 and 100.</p>
+                    </div>
+
+                    <button onclick="createTask()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200 shadow-lg active:scale-95">
+                        Add Task
+                    </button>
+                </div>
+            </div>
+
+            <div class="md:w-2/3 space-y-4">
+                <div class="bg-white p-5 rounded-xl shadow-sm flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex gap-2">
+                        <button onclick="loadTasks('all')" class="px-4 py-1.5 bg-gray-200 hover:bg-gray-300 rounded-full text-sm font-medium transition">All Tasks</button>
+                        <button onclick="loadTasks('priority')" class="px-4 py-1.5 bg-red-100 text-red-600 hover:bg-red-200 rounded-full text-sm font-medium transition font-bold">Priority Bugs</button>
+                    </div>
+                    <div class="text-gray-700 text-sm">
+                        Total Feature Hours: <span id="totalHours" class="font-bold text-blue-600">0</span>
+                    </div>
+                </div>
+
+                <div id="tasksList" class="bg-white rounded-xl shadow-md overflow-y-auto max-h-[600px] divide-y text-sm md:text-base">
+                    <p class="p-10 text-center text-gray-400 italic">Loading tasks...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleFormFields() {
+            const type = document.getElementById('taskType').value;
+            document.getElementById('bugFields').classList.toggle('hidden', type !== 'bug');
+            document.getElementById('featureFields').classList.toggle('hidden', type !== 'feature');
+        }
+
+        async function fetchTotalHours() {
+            try {
+                const response = await fetch('/api/tasks/features/total-hours');
+                const hours = await response.json();
+                document.getElementById('totalHours').innerText = hours;
+            } catch (e) { console.error("Error fetching hours", e); }
+        }
+
+        async function loadTasks(mode = 'all') {
+            const url = mode === 'all' ? '/api/tasks' : '/api/tasks/priority-bugs';
+            try {
+                const response = await fetch(url);
+                const tasks = await response.json();
+                renderTasks(tasks);
+                fetchTotalHours();
+            } catch (e) {
+                document.getElementById('tasksList').innerHTML = `<p class="p-10 text-center text-red-500 font-bold">Server Error.</p>`;
+            }
+        }
+
+        function renderTasks(tasks) {
+            const container = document.getElementById('tasksList');
+            if (!tasks || tasks.length === 0) {
+                container.innerHTML = '<p class="p-10 text-center text-gray-400">No tasks found.</p>';
+                return;
+            }
+
+            container.innerHTML = tasks.map(t => {
+                const id = t.id || t.Id;
+                const title = t.title || t.Title;
+                const isCompleted = t.isCompleted !== undefined ? t.isCompleted : t.IsCompleted;
+                const createdDate = t.createdAt || t.CreatedAt;
+                const dateStr = createdDate ? new Date(createdDate).toLocaleString('ru-RU', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '---';
+
+                return `
+                        <div class="p-4 flex items-center justify-between hover:bg-gray-50 transition border-l-4 ${isCompleted ? 'border-green-400' : 'border-blue-400'}">
+                            <div class="flex flex-col gap-1">
+                                <span class="font-semibold text-gray-800 text-lg ${isCompleted ? 'line-through text-gray-400' : ''}">${title}</span>
+                                <div class="flex items-center gap-3 text-[11px]">
+                                    <span class="text-gray-400 font-mono uppercase">Created: ${dateStr}</span>
+                                    <span class="${isCompleted ? 'text-green-500' : 'text-yellow-600'} font-bold">
+                                        ${isCompleted ? '✓ Completed' : '○ Pending'}
+                                    </span>
+                                </div>
+                            </div>
+                            ${!isCompleted ? `
+                                <button onclick="completeTask('${id}')" class="text-xs border-2 border-green-500 text-green-600 hover:bg-green-500 hover:text-white font-bold py-1.5 px-4 rounded-lg transition-all active:scale-95">
+                                    Done
+                                </button>
+                            ` : ''}
+                        </div>`;
+            }).join('');
+        }
+
+        async function createTask() {
+            const type = document.getElementById('taskType').value;
+            const titleInput = document.getElementById('taskTitle');
+            const hoursInput = document.getElementById('estHours');
+            const titleErr = document.getElementById('titleError');
+            const hoursErr = document.getElementById('hoursError');
+
+            [titleErr, hoursErr].forEach(e => e.classList.add('hidden'));
+            [titleInput, hoursInput].forEach(i => i.classList.remove('border-red-500'));
+
+            let isValid = true;
+            const titleValue = titleInput.value.trim();
+
+            if (titleValue.length < 3 || titleValue.length > 100) {
+                titleErr.classList.remove('hidden');
+                titleInput.classList.add('border-red-500');
+                isValid = false;
+            }
+
+            if (type === 'feature') {
+                const h = parseFloat(hoursInput.value);
+                if (isNaN(h) || h < 0.1 || h > 100) {
+                    hoursErr.classList.remove('hidden');
+                    hoursInput.classList.add('border-red-500');
+                    isValid = false;
+                }
+            }
+
+            if (!isValid) return;
+
+            const body = { title: titleValue };
+            let endpoint = '/api/tasks/bugs';
+
+            if (type === 'bug') {
+                body.severityLevel = document.getElementById('severity').value;
+            } else {
+                body.estimatedHours = parseFloat(hoursInput.value);
+                endpoint = '/api/tasks/features';
+            }
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (response.ok) {
+                    titleInput.value = '';
+                    hoursInput.value = '';
+                    loadTasks();
+                } else {
+                    const errorData = await response.json();
+                    alert("Server Error: " + JSON.stringify(errorData));
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function completeTask(id) {
+            try {
+                const res = await fetch(`/api/tasks/${id}/complete`, { method: 'PUT' });
+                if (res.ok) loadTasks();
+            } catch (e) { console.error(e); }
+        }
+
+        loadTasks();
+    </script>
+</body>
+</html>

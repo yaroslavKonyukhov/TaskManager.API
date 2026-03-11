@@ -1,0 +1,50 @@
+@TaskManager.API_HostAddress = https://localhost:7189
+
+### 1. GetAllTasks (Get)
+GET {{TaskManager.API_HostAddress}}/api/tasks
+Accept: application/json
+
+###
+
+### 2. Create new bug (POST)
+POST {{TaskManager.API_HostAddress}}/api/tasks/bugs
+Content-Type: application/json
+
+{
+  "title": "Critical bug UI",
+  "severityLevel": "High"
+}
+
+###
+
+### 3. Create new feature (POST)
+POST {{TaskManager.API_HostAddress}}/api/tasks/features
+Content-Type: application/json
+
+{
+  "title": "Add export to PDF",
+  "estimatedHours": 12
+}
+
+###
+
+### 4. GetTaskByID (GET)
+GET {{TaskManager.API_HostAddress}}/api/tasks/550e8400-e29b-41d4-a716-446655440000
+Accept: application/json
+
+###
+
+### 5. Only priority bugs (GET)
+GET {{TaskManager.API_HostAddress}}/api/tasks/priority-bugs
+Accept: application/json
+
+###
+
+### 6. Total hours for features (GET)
+GET {{TaskManager.API_HostAddress}}/api/tasks/features/total-hours
+Accept: application/json
+
+###
+
+### 7. Complete Task (PUT)
+PUT {{TaskManager.API_HostAddress}}/api/tasks/550e8400-e29b-41d4-a716-446655440000/complete
